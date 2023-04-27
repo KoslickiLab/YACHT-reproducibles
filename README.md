@@ -1,4 +1,6 @@
-# Estimating_Unknowns
+# YACHT
+
+**_PLEASE NOTE: this repo contains a proof-of-concept. For updates on the production-level code, please follow [this repo](https://github.com/KoslickiLab/YACHT/)_**
 
 ## Installation
 ```bash

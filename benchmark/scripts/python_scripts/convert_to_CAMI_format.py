@@ -130,6 +130,7 @@ if __name__ == "__main__":
     with open(args.outfile, 'w') as f:
         f.write(f'@SampleID:{sample_name}\n')
         f.write('@Version:0.9.1\n')
-        f.write(f"{'|'.join(list(res_df['RANK'].unique()))}\n")
+        f.write(f"{'|'.join(list(res_df['RANK'].unique()))}\n\n")
+        f.write(f"@@TAXID\tRANK\tTAXPATH\tTAXPATHSN\tPERCENTAGE\n")
         for row in res_df.to_numpy():
             f.write(f"{row[0]}\t{row[1]}\t{row[2]}\t{row[3]}\t{row[4]}\n")

@@ -28,14 +28,22 @@ git clone https://github.com/KoslickiLab/YACHT.git
 
 2. Download CAMI2 datasets 
 ```bash
-# download_cami2_data.sh <output_dir> <cpu_num>
-bash ./benchmark/scripts/bash_scripts/download_cami2_data.sh ./benchmark 50
+# download_cami2_data.sh <benchmark_dir> <cpu_num>
+bash ./benchmark/scripts/bash_scripts/download_cami2_data.sh <path_to_YACHT_experiment>/benchmark 50
 ```
 
-3. Run YACHT on CAMI datasets
+3. Run YACHT on the CAMI datasets
 ```bash
-# run_YACHT.sh <yacht_repo_loc> <output_dir> <cpu_num>
-bash ./benchmark/scripts/bash_scripts/run_YACHT.sh ./YACHT ./benchmark 20
+# run_YACHT.sh <yacht_repo_loc> <benchmark_dir> <cpu_num>
+bash ./benchmark/scripts/bash_scripts/run_YACHT.sh <path_to_YACHT_experiment>/YACHT <path_to_YACHT_experiment>/benchmark 20
+```
+
+4. Run OPAL on the YACHT results
+```bash
+# git clone OPAL 
+git clone https://github.com/CAMI-challenge/OPAL
+# run_OPAL.sh <opal_repo_loc> <benchmark_dir> <cpu_num>
+bash ./benchmark/scripts/bash_scripts/run_OPAL.sh <path_to_YACHT_experiment>/OPAL <path_to_YACHT_experiment>/benchmark 20
 ```
 
 ## Proof-of-Concept Experiments

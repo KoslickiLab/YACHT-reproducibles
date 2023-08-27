@@ -47,9 +47,8 @@ if [ ! -d $benchmark_dir/results/YACHT_results/rhizosphere_data ]; then
     ## run YACHT on the samples
     parallel -j $cpu_num python $yacht_repo_loc/run_YACHT.py --ref_matrix $yacht_repo_loc/gtdb_ani_thresh_0.95_ref_matrix_processed.npz --sample_file $benchmark_dir/CAMI_data/rhizosphere_data/sketches/rhimgCAMI2_sample_{}.sig.zip --ksize 31 --ani_thresh 0.95 --significance 0.99 --min_coverage 1 --outfile $benchmark_dir/results/YACHT_results/rhizosphere_data/rhimgCAMI2_sample_{}.csv ::: {0..20};
     ## convert the YACHT results to CAMI format
-    parallel -j $cpu_num python $yacht_repo_loc/comparison/scripts/python_scripts/convert_to_CAMI_format.py --yacht_res $benchmark_dir/results/YACHT_results/rhizosphere_data/rhimgCAMI2_sample_{}.csv --gtdb_metadata_dir $yacht_repo_loc/gtdb_reference --outfile $benchmark_dir/results/YACHT_results/rhizosphere_data/rhimgCAMI2_sample_{}_cami_format.profile ::: {0..20};
+    parallel -j $cpu_num python $benchmark_dir/scripts/python_scripts/convert_to_CAMI_format.py --yacht_res $benchmark_dir/results/YACHT_results/rhizosphere_data/rhimgCAMI2_sample_{}.csv --gtdb_metadata_dir $yacht_repo_loc/gtdb_reference --outfile $benchmark_dir/results/YACHT_results/rhizosphere_data/rhimgCAMI2_sample_{}_cami_format.profile ::: {0..20};
 fi
-parallel -j $cpu_num python $yacht_repo_loc/comparison/scripts/python_scripts/convert_to_CAMI_format.py --yacht_res $benchmark_dir/results/YACHT_results/rhizosphere_data/rhimgCAMI2_sample_{}.csv --gtdb_metadata_dir $yacht_repo_loc/gtdb_reference --outfile $benchmark_dir/results/YACHT_results/rhizosphere_data/rhimgCAMI2_sample_{}_cami_format.profile ::: {0..20};
 
 # run YACHT on Clinical pathogen detection challenge data
 if [ ! -d $benchmark_dir/results/YACHT_results/pathogen_detection_data ]; then
@@ -63,9 +62,8 @@ if [ ! -d $benchmark_dir/results/YACHT_results/pathogen_detection_data ]; then
     ## run YACHT on the samples
     python $yacht_repo_loc/run_YACHT.py --ref_matrix $yacht_repo_loc/gtdb_ani_thresh_0.95_ref_matrix_processed.npz --sample_file $benchmark_dir/CAMI_data/pathogen_detection_data/sketches/patmgCAMI2.sig.zip --ksize 31 --ani_thresh 0.95 --significance 0.99 --min_coverage 1 --outfile $benchmark_dir/results/YACHT_results/pathogen_detection_data/patmgCAMI2.csv;
     ## convert the YACHT results to CAMI format
-    python $yacht_repo_loc/comparison/scripts/python_scripts/convert_to_CAMI_format.py --yacht_res $benchmark_dir/results/YACHT_results/pathogen_detection_data/patmgCAMI2.csv --gtdb_metadata_dir $yacht_repo_loc/gtdb_reference --outfile $benchmark_dir/results/YACHT_results/pathogen_detection_data/patmgCAMI2_cami_format.profile;
+    python $benchmark_dir/scripts/python_scripts/convert_to_CAMI_format.py --yacht_res $benchmark_dir/results/YACHT_results/pathogen_detection_data/patmgCAMI2.csv --gtdb_metadata_dir $yacht_repo_loc/gtdb_reference --outfile $benchmark_dir/results/YACHT_results/pathogen_detection_data/patmgCAMI2_cami_format.profile;
 fi
-python $yacht_repo_loc/comparison/scripts/python_scripts/convert_to_CAMI_format.py --yacht_res $benchmark_dir/results/YACHT_results/pathogen_detection_data/patmgCAMI2.csv --gtdb_metadata_dir $yacht_repo_loc/gtdb_reference --outfile $benchmark_dir/results/YACHT_results/pathogen_detection_data/patmgCAMI2_cami_format.profile;
 
 # run YACHT on Challenge Marine Dataset
 if [ ! -d $benchmark_dir/results/YACHT_results/marine_data ]; then
@@ -79,9 +77,8 @@ if [ ! -d $benchmark_dir/results/YACHT_results/marine_data ]; then
     ## run YACHT on the samples
     parallel -j $cpu_num python $yacht_repo_loc/run_YACHT.py --ref_matrix $yacht_repo_loc/gtdb_ani_thresh_0.95_ref_matrix_processed.npz --sample_file $benchmark_dir/CAMI_data/marine_data/sketches/marmgCAMI2_sample_{}.sig.zip --ksize 31 --ani_thresh 0.95 --significance 0.99 --min_coverage 1 --outfile $benchmark_dir/results/YACHT_results/marine_data/marmgCAMI2_sample_{}.csv ::: {0..9};
     ## convert the YACHT results to CAMI format
-    parallel -j $cpu_num python $yacht_repo_loc/comparison/scripts/python_scripts/convert_to_CAMI_format.py --yacht_res $benchmark_dir/results/YACHT_results/marine_data/marmgCAMI2_sample_{}.csv --gtdb_metadata_dir $yacht_repo_loc/gtdb_reference --outfile $benchmark_dir/results/YACHT_results/marine_data/marmgCAMI2_sample_{}_cami_format.profile ::: {0..9};
+    parallel -j $cpu_num python $benchmark_dir/scripts/python_scripts/convert_to_CAMI_format.py --yacht_res $benchmark_dir/results/YACHT_results/marine_data/marmgCAMI2_sample_{}.csv --gtdb_metadata_dir $yacht_repo_loc/gtdb_reference --outfile $benchmark_dir/results/YACHT_results/marine_data/marmgCAMI2_sample_{}_cami_format.profile ::: {0..9};
 fi
-parallel -j $cpu_num python $yacht_repo_loc/comparison/scripts/python_scripts/convert_to_CAMI_format.py --yacht_res $benchmark_dir/results/YACHT_results/marine_data/marmgCAMI2_sample_{}.csv --gtdb_metadata_dir $yacht_repo_loc/gtdb_reference --outfile $benchmark_dir/results/YACHT_results/marine_data/marmgCAMI2_sample_{}_cami_format.profile ::: {0..9};
 
 # run YACHT on Strain Madness Dataset
 if [ ! -d $benchmark_dir/results/YACHT_results/strain_madness_data ]; then
@@ -95,8 +92,5 @@ if [ ! -d $benchmark_dir/results/YACHT_results/strain_madness_data ]; then
     ## run YACHT on the samples
     parallel -j $cpu_num python $yacht_repo_loc/run_YACHT.py --ref_matrix $yacht_repo_loc/gtdb_ani_thresh_0.95_ref_matrix_processed.npz --sample_file $benchmark_dir/CAMI_data/strain_madness_data/sketches/strmgCAMI2_sample_{}.sig.zip --ksize 31 --ani_thresh 0.95 --significance 0.99 --min_coverage 1 --outfile $benchmark_dir/results/YACHT_results/strain_madness_data/strmgCAMI2_sample_{}.csv ::: {0..99};
     ## convert the YACHT results to CAMI format
-    parallel -j $cpu_num python $yacht_repo_loc/comparison/scripts/python_scripts/convert_to_CAMI_format.py --yacht_res $benchmark_dir/results/YACHT_results/strain_madness_data/strmgCAMI2_sample_{}.csv --gtdb_metadata_dir $yacht_repo_loc/gtdb_reference --outfile $benchmark_dir/results/YACHT_results/strain_madness_data/strmgCAMI2_sample_{}_cami_format.profile ::: {0..99};
+    parallel -j $cpu_num python $benchmark_dir/scripts/python_scripts/convert_to_CAMI_format.py --yacht_res $benchmark_dir/results/YACHT_results/strain_madness_data/strmgCAMI2_sample_{}.csv --gtdb_metadata_dir $yacht_repo_loc/gtdb_reference --outfile $benchmark_dir/results/YACHT_results/strain_madness_data/strmgCAMI2_sample_{}_cami_format.profile ::: {0..99};
 fi
-parallel -j $cpu_num python $yacht_repo_loc/comparison/scripts/python_scripts/convert_to_CAMI_format.py --yacht_res $benchmark_dir/results/YACHT_results/strain_madness_data/strmgCAMI2_sample_{}.csv --gtdb_metadata_dir $yacht_repo_loc/gtdb_reference --outfile $benchmark_dir/results/YACHT_results/strain_madness_data/strmgCAMI2_sample_{}_cami_format.profile ::: {0..99};
-
-

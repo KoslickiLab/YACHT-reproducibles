@@ -20,7 +20,6 @@ less gs_pathogen.profile | sed 's/short_read_//' | awk '/@SampleID:/{filename=su
 cd $benchmark_dir/CAMI_data/marine_data/ground_truth
 less gs_marine_short.profile | sed 's/short_read_//' | awk '/@SampleID:/{filename=substr($0, length("@SampleID:") + 1) ".profile"} {print >filename}'
 cd $benchmark_dir/CAMI_data/strain_madness_data/ground_truth
-awk '/@SampleID:/{filename=substr($0, length("@SampleID:") + 1) ".profile"} {print >filename}' gs_strain_madness_short_long.profile
 less gs_strain_madness_short_long.profile | sed 's/short_read_//' | awk '/@SampleID:/{filename=substr($0, length("@SampleID:") + 1) ".profile"} {print >filename}'
 
 ## go to the benchmark directory

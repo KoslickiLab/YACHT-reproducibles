@@ -15,5 +15,7 @@ dependencies:
   - biom-format
   - pytaxonkit
   - cvxpy
+  - jq
+  - ncbi-datasets-cli
   - pip:
     - cami-opal

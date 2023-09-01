@@ -16,7 +16,6 @@ import pickle
 def get_all_markers():
     return list(mmarkers.MarkerStyle.markers.keys())
 
-# sourcery skip: raise-specific-error
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="This script is used to generate the plots for comparing YACHT with other SOTA tools.",

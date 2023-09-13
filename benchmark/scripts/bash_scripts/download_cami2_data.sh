@@ -36,6 +36,10 @@ if [ ! -d $benchmark_dir/CAMI_data/rhizosphere_data ]; then
     wget -P $benchmark_dir/CAMI_data/rhizosphere_data/opal_results https://raw.githubusercontent.com/CAMI-challenge/second_challenge_evaluation/master/profiling/rhizosphere_dataset/results/OPAL_short_long_noplasmids_normalized_filtered/results.tsv;
     ## download the ground truth profile
     wget -P $benchmark_dir/CAMI_data/rhizosphere_data/ground_truth https://raw.githubusercontent.com/CAMI-challenge/second_challenge_evaluation/master/profiling/rhizosphere_dataset/data/ground_truth/gs_rhizosphere.filtered.profile;
+    # Split the ground truth profile into individual files
+    cd $benchmark_dir/CAMI_data/rhizosphere_data/ground_truth
+    less gs_rhizosphere.filtered.profile | sed 's/short_read_//' | awk '/@SampleID:/{filename=substr($0, length("@SampleID:") + 1) ".profile"} {print >filename}'
+        
     ## download raw genome files and their metadata
     wget -P $benchmark_dir/CAMI_data/rhizosphere_data/genomes https://frl.publisso.de/data/frl:6425521/plant_associated/short_read/rhimgCAMI2_setup.tar.gz;
     tar zxvf $benchmark_dir/CAMI_data/rhizosphere_data/genomes/rhimgCAMI2_setup.tar.gz -C $benchmark_dir/CAMI_data/rhizosphere_data/genomes;
@@ -47,7 +51,7 @@ if [ ! -d $benchmark_dir/CAMI_data/rhizosphere_data ]; then
     mv $benchmark_dir/CAMI_data/rhizosphere_data/genomes/source_genomes/*.fasta $benchmark_dir/CAMI_data/rhizosphere_data/genomes;
     rm -r $benchmark_dir/CAMI_data/rhizosphere_data/genomes/source_genomes $benchmark_dir/CAMI_data/rhizosphere_data/genomes/rhimgCAMI2_genomes.tar.gz;
     ## combine metadata
-    python $benchmark_dir/scripts/python_scripts/combine_metadata_files.py --metadata $benchmark_dir/CAMI_data/rhizosphere_data/genomes/metadata.tsv --genome_to_id $benchmark_dir/CAMI_data/rhizosphere_data/genomes/genome_to_id.tsv;
+    python $benchmark_dir/scripts/python_scripts/combine_metadata_files.py --metadata $benchmark_dir/CAMI_data/rhizosphere_data/genomes/metadata.tsv --genome_to_id $benchmark_dir/CAMI_data/rhizosphere_data/genomes/genome_to_id.tsv --ground_truth_dir $benchmark_dir/CAMI_data/rhizosphere_data/ground_truth;
 fi
 
 
@@ -81,6 +85,10 @@ if [ ! -d $benchmark_dir/CAMI_data/marine_data ]; then
     wget -P $benchmark_dir/CAMI_data/marine_data/opal_results https://raw.githubusercontent.com/CAMI-challenge/second_challenge_evaluation/master/profiling/marine_dataset/results/OPAL_short_long_noplasmids_normalized_filtered/results.tsv;
     # download the ground truth profile
     wget -P $benchmark_dir/CAMI_data/marine_data/ground_truth https://raw.githubusercontent.com/CAMI-challenge/second_challenge_evaluation/master/profiling/marine_dataset/data/ground_truth/gs_marine_short.filtered.profile;
+    # Split the ground truth profile into individual files
+    cd $benchmark_dir/CAMI_data/marine_data/ground_truth
+    less gs_marine_short.profile | sed 's/short_read_//' | awk '/@SampleID:/{filename=substr($0, length("@SampleID:") + 1) ".profile"} {print >filename}'
+        
     ## download raw genome files and their metadata
     wget -P $benchmark_dir/CAMI_data/marine_data/genomes https://frl.publisso.de/data/frl:6425521/marine/short_read/marmgCAMI2_setup.tar.gz;
     tar zxvf $benchmark_dir/CAMI_data/marine_data/genomes/marmgCAMI2_setup.tar.gz -C $benchmark_dir/CAMI_data/marine_data/genomes;
@@ -92,7 +100,7 @@ if [ ! -d $benchmark_dir/CAMI_data/marine_data ]; then
     mv $benchmark_dir/CAMI_data/marine_data/genomes/simulation_short_read/genomes/*.fasta $benchmark_dir/CAMI_data/marine_data/genomes;
     rm -r $benchmark_dir/CAMI_data/marine_data/genomes/simulation_short_read $benchmark_dir/CAMI_data/marine_data/genomes/marmgCAMI2_genomes.tar.gz;
     ## combine metadata
-    python $benchmark_dir/scripts/python_scripts/combine_metadata_files.py --metadata $benchmark_dir/CAMI_data/marine_data/genomes/metadata.tsv --genome_to_id $benchmark_dir/CAMI_data/marine_data/genomes/genome_to_id.tsv;
+    python $benchmark_dir/scripts/python_scripts/combine_metadata_files.py --metadata $benchmark_dir/CAMI_data/marine_data/genomes/metadata.tsv --genome_to_id $benchmark_dir/CAMI_data/marine_data/genomes/genome_to_id.tsv --ground_truth_dir $benchmark_dir/CAMI_data/marine_data/ground_truth;
 fi
 
 # Strain Madness Dataset
@@ -114,6 +122,10 @@ if [ ! -d $benchmark_dir/CAMI_data/strain_madness_data ]; then
     wget -P $benchmark_dir/CAMI_data/strain_madness_data/opal_results https://raw.githubusercontent.com/CAMI-challenge/second_challenge_evaluation/master/profiling/strain_madness_dataset/results/OPAL_default_short_read_samples/results.tsv;
     # download the ground truth profile
     wget -P $benchmark_dir/CAMI_data/strain_madness_data/ground_truth https://raw.githubusercontent.com/CAMI-challenge/second_challenge_evaluation/master/profiling/strain_madness_dataset/data/ground_truth/gs_strain_madness_short_long.profile;
+    # Split the ground truth profile into individual files
+    cd $benchmark_dir/CAMI_data/strain_madness_data/ground_truth
+    less gs_strain_madness_short_long.profile | sed 's/short_read_//' | awk '/@SampleID:/{filename=substr($0, length("@SampleID:") + 1) ".profile"} {print >filename}'
+
 
     ## download raw genome files and their metadata
     wget -P $benchmark_dir/CAMI_data/strain_madness_data/genomes https://frl.publisso.de/data/frl:6425521/strain/short_read/strmgCAMI2_setup.tar.gz;
@@ -126,5 +138,5 @@ if [ ! -d $benchmark_dir/CAMI_data/strain_madness_data ]; then
     mv $benchmark_dir/CAMI_data/strain_madness_data/genomes/short_read/source_genomes/*.fasta $benchmark_dir/CAMI_data/strain_madness_data/genomes;
     rm -r $benchmark_dir/CAMI_data/strain_madness_data/genomes/short_read $benchmark_dir/CAMI_data/strain_madness_data/genomes/strmgCAMI2_genomes.tar.gz;
     ## combine metadata
-    python $benchmark_dir/scripts/python_scripts/combine_metadata_files.py --metadata $benchmark_dir/CAMI_data/strain_madness_data/genomes/metadata.tsv --genome_to_id $benchmark_dir/CAMI_data/strain_madness_data/genomes/genome_to_id.tsv;
+    python $benchmark_dir/scripts/python_scripts/combine_metadata_files.py --metadata $benchmark_dir/CAMI_data/strain_madness_data/genomes/metadata.tsv --genome_to_id $benchmark_dir/CAMI_data/strain_madness_data/genomes/genome_to_id.tsv --ground_truth_dir $benchmark_dir/CAMI_data/strain_madness_data/ground_truth;
 fi

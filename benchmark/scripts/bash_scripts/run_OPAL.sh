@@ -11,17 +11,6 @@ opal_repo_loc=$1
 benchmark_dir=$2
 cpu_num=$3
 
-
-# Split the ground truth profile into individual files
-cd $benchmark_dir/CAMI_data/rhizosphere_data/ground_truth
-less gs_rhizosphere.profile | sed 's/short_read_//' | awk '/@SampleID:/{filename=substr($0, length("@SampleID:") + 1) ".profile"} {print >filename}'
-# cd $benchmark_dir/CAMI_data/pathogen_detection_data/ground_truth
-less gs_pathogen.profile | sed 's/short_read_//' | awk '/@SampleID:/{filename=substr($0, length("@SampleID:") + 1) ".profile"} {print >filename}'
-cd $benchmark_dir/CAMI_data/marine_data/ground_truth
-less gs_marine_short.profile | sed 's/short_read_//' | awk '/@SampleID:/{filename=substr($0, length("@SampleID:") + 1) ".profile"} {print >filename}'
-cd $benchmark_dir/CAMI_data/strain_madness_data/ground_truth
-less gs_strain_madness_short_long.profile | sed 's/short_read_//' | awk '/@SampleID:/{filename=substr($0, length("@SampleID:") + 1) ".profile"} {print >filename}'
-
 ## go to the benchmark directory
 cd $benchmark_dir
 if [ ! -d $benchmark_dir/results/OPAL_results ]; then
@@ -34,9 +23,9 @@ if [ ! -d $benchmark_dir/results/OPAL_results/rhizosphere_data ]; then
 fi
 filename=`ls $benchmark_dir/CAMI_data/rhizosphere_data/ground_truth/*_sample_*.profile | awk -F '/' '{print $NF}' | head -1 | awk -F '_' '{print $1}'`
 # run OPAL
-parallel -j $cpu_num opal.py -g $benchmark_dir/CAMI_data/rhizosphere_data/ground_truth/${filename}_sample_{}.profile -o $benchmark_dir/results/OPAL_results/rhizosphere_data/sample{} $benchmark_dir/results/YACHT_results/rhizosphere_data/${filename}_sample_{}_cami_format.profile ::: {0..20};
+parallel -j $cpu_num opal.py -g $benchmark_dir/CAMI_data/rhizosphere_data/ground_truth/${filename}_sample_{2}.profile -o $benchmark_dir/results/OPAL_results/rhizosphere_data/coverage{1}_sample{2} $benchmark_dir/results/YACHT_results/rhizosphere_data/${filename}_sample_{2}_cami_format_coverage{1}.profile ::: 1 0.5 0.1 0.05 0.01 ::: {0..20};
 # Generate plots
-python $benchmark_dir/scripts/python_scripts/generate_plots.py --cami_opal_res $benchmark_dir/CAMI_data/rhizosphere_data/opal_results/results.tsv --yacht_opal_dir $benchmark_dir/results/OPAL_results/rhizosphere_data --outdir $benchmark_dir/results/OPAL_results/rhizosphere_data --filename "rhizosphere" --fig_title "Rhizosphere Data"
+python $benchmark_dir/scripts/python_scripts/generate_plots.py --cami_opal_res $benchmark_dir/CAMI_data/rhizosphere_data/opal_results/results.tsv --yacht_opal_dir $benchmark_dir/results/OPAL_results/rhizosphere_data --outdir $benchmark_dir/results/OPAL_results/rhizosphere_data --filename "rhizosphere" --fig_title "Rhizosphere Samples, Species Level"
 
 # # run OPAL on Pathogen detection challenge data
 # if [ ! -d $benchmark_dir/results/OPAL_results/pathogen_detection_data ]; then
@@ -55,9 +44,9 @@ if [ ! -d $benchmark_dir/results/OPAL_results/marine_data ]; then
 fi
 filename=`ls $benchmark_dir/CAMI_data/marine_data/ground_truth/*_sample_*.profile | awk -F '/' '{print $NF}' | head -1 | awk -F '_' '{print $1}'`
 # run OPAL
-parallel -j $cpu_num opal.py -g $benchmark_dir/CAMI_data/marine_data/ground_truth/${filename}_sample_{}.profile -o $benchmark_dir/results/OPAL_results/marine_data/sample{} $benchmark_dir/results/YACHT_results/marine_data/${filename}_sample_{}_cami_format.profile ::: {0..9};
+parallel -j $cpu_num opal.py -g $benchmark_dir/CAMI_data/marine_data/ground_truth/${filename}_sample_{2}.profile -o $benchmark_dir/results/OPAL_results/marine_data/coverage{1}_sample{2} $benchmark_dir/results/YACHT_results/marine_data/${filename}_sample_{2}_cami_format_coverage{1}.profile ::: 1 0.5 0.1 0.05 0.01 ::: {0..9};
 # Generate plots
-python $benchmark_dir/scripts/python_scripts/generate_plots.py --cami_opal_res $benchmark_dir/CAMI_data/marine_data/opal_results/results.tsv --yacht_opal_dir $benchmark_dir/results/OPAL_results/marine_data --outdir $benchmark_dir/results/OPAL_results/marine_data --filename "marine" --fig_title "Marine Data"
+python $benchmark_dir/scripts/python_scripts/generate_plots.py --cami_opal_res $benchmark_dir/CAMI_data/marine_data/opal_results/results.tsv --yacht_opal_dir $benchmark_dir/results/OPAL_results/marine_data --outdir $benchmark_dir/results/OPAL_results/marine_data --filename "marine" --fig_title "Marine Samples, Species Level"
 
 # run OPAL on Strain Madness challenge data
 if [ ! -d $benchmark_dir/results/OPAL_results/strain_madness_data ]; then
@@ -65,7 +54,7 @@ if [ ! -d $benchmark_dir/results/OPAL_results/strain_madness_data ]; then
 fi
 filename=`ls $benchmark_dir/CAMI_data/strain_madness_data/ground_truth/*_sample_*.profile | awk -F '/' '{print $NF}' | head -1 | awk -F '_' '{print $1}'`
 # run OPAL
-parallel -j $cpu_num opal.py -g $benchmark_dir/CAMI_data/strain_madness_data/ground_truth/${filename}_sample_{}.profile -o $benchmark_dir/results/OPAL_results/strain_madness_data/sample{} $benchmark_dir/results/YACHT_results/strain_madness_data/${filename}_sample_{}_cami_format.profile ::: {0..99};
+parallel -j $cpu_num opal.py -g $benchmark_dir/CAMI_data/strain_madness_data/ground_truth/${filename}_sample_{2}.profile -o $benchmark_dir/results/OPAL_results/strain_madness_data/coverage{1}_sample{2} $benchmark_dir/results/YACHT_results/strain_madness_data/${filename}_sample_{2}_cami_format_coverage{1}.profile ::: 1 0.5 0.1 0.05 0.01 ::: {0..99};
 # Generate plots
-python $benchmark_dir/scripts/python_scripts/generate_plots.py --cami_opal_res $benchmark_dir/CAMI_data/strain_madness_data/opal_results/results.tsv --yacht_opal_dir $benchmark_dir/results/OPAL_results/strain_madness_data --outdir $benchmark_dir/results/OPAL_results/strain_madness_data --filename "strain_madness" --fig_title "Strain Madness Data"
+python $benchmark_dir/scripts/python_scripts/generate_plots.py --cami_opal_res $benchmark_dir/CAMI_data/strain_madness_data/opal_results/results.tsv --yacht_opal_dir $benchmark_dir/results/OPAL_results/strain_madness_data --outdir $benchmark_dir/results/OPAL_results/strain_madness_data --filename "strain_madness" --fig_title "Strain Madness Samples, Species Level"
 

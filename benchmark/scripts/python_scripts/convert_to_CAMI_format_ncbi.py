@@ -10,29 +10,14 @@ import requests
 import tarfile
 import pytaxonkit
 import numpy as np
-
-def download_file(url, save_path):
-    response = requests.get(url, stream=True)
-
-    # Check if the request was successful
-    if response.status_code == 200:
-        # Write the response content to a local file
-        with open(os.path.join(save_path), 'wb') as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
-    else:
-        print(f"Failed to download the file. HTTP status code: {response.status_code}")
-
-def read_tar_gz_file(tar_gz_file_path):
-    tar = tarfile.open(tar_gz_file_path, "r:gz")
-    return pd.read_csv(tar.extractfile(tar.getmembers()[0]), sep='\t', header=0)
             
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="This script is used to converet the YACHT results (based on GTDB reference database) to CAMI profiling Bioboxes format.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--yacht_res", type=str, required=True, help="path to the YACHT CSV result")
-    parser.add_argument("--metadata_dir", type=str, required=False, help="path to the GTDB metadata directory", default=None)
+    parser.add_argument("--metadata_dir", type=str, required=False, help="path to the metadata directory", default=None)
+    parser.add_argument('--min_coverage', type=float, help='To compute false negative weight, assume each organism has this minimum coverage in sample. Should be between 0 and 1.', required=False, default = 1)
     parser.add_argument("--outfile", type=str, required=True, help="path to the CAMI formatted output file")
     args = parser.parse_args()
 
@@ -41,34 +26,21 @@ if __name__ == "__main__":
 
     ## Read GTDB metadata if available
     if args.metadata_dir is not None:
-        gtdb_metadata_path = Path(args.metadata_dir)
-        if not gtdb_metadata_path.is_dir():
+        ncbi_metadata_path = Path(args.metadata_dir)
+        if not ncbi_metadata_path.is_dir():
             print(f"Error: {args.metadata_dir} is not a directory", flush=True)
             exit(1)
-        elif len(list(gtdb_metadata_path.glob('*.tar.gz'))) != 2:
-            print(f"Error: {args.metadata_dir} does not contain any '*.tar.gz' file. Download it automaticallyy.", flush=True)
-            download_file("https://data.gtdb.ecogenomic.org/releases/release214/214.1/ar53_metadata_r214.tar.gz", os.path.join(args.metadata_dir,'ar53_metadata_r214.tar.gz'))
-            download_file("https://data.gtdb.ecogenomic.org/releases/release214/214.1/bac120_metadata_r214.tar.gz", os.path.join(args.metadata_dir,'bac120_metadata_r214.tar.gz'))
-            # Read the metadata
-            gtdb_metadata_path = str(gtdb_metadata_path.absolute())
-            bac120_metadata_df = read_tar_gz_file(os.path.join(gtdb_metadata_path,'bac120_metadata_r214.tar.gz'))[['accession','ncbi_taxid']]
-            ar53_metadata_df = read_tar_gz_file(os.path.join(gtdb_metadata_path,'ar53_metadata_r214.tar.gz'))[['accession','ncbi_taxid']]
-            metadata_df = pd.concat([ar53_metadata_df, bac120_metadata_df]).reset_index(drop=True)
-            metadata_df['accession'] = metadata_df['accession'].str.replace('^(GB_|RS_)', '', regex=True)
         else:
             # Read the metadata
-            gtdb_metadata_path = str(gtdb_metadata_path.absolute())
-            bac120_metadata_df = read_tar_gz_file(os.path.join(gtdb_metadata_path,'bac120_metadata_r214.tar.gz'))[['accession','ncbi_taxid']]
-            ar53_metadata_df = read_tar_gz_file(os.path.join(gtdb_metadata_path,'ar53_metadata_r214.tar.gz'))[['accession','ncbi_taxid']]
-            metadata_df = pd.concat([ar53_metadata_df, bac120_metadata_df]).reset_index(drop=True)
-            metadata_df['accession'] = metadata_df['accession'].str.replace('^(GB_|RS_)', '', regex=True)
+            ncbi_metadata_path = str(ncbi_metadata_path.absolute())
+            metadata_df = pd.read_csv(os.path.join(ncbi_metadata_path, 'ncbi_database_metadata.tsv'), sep='\t', header=0)
     else:
-        print("Error: GTDB metadata is not provided")
+        print("Error: NCBI metadata is not provided")
         exit(1)
 
     ## Find the ncbi lineage
-    result = pytaxonkit.lineage(list(set(metadata_df['ncbi_taxid'].tolist())))
-    metadata_df = metadata_df.merge(result[['TaxID','Rank','FullLineageTaxIDs','FullLineage','FullLineageRanks']], left_on='ncbi_taxid', right_on='TaxID').drop(columns=['ncbi_taxid']).reset_index(drop=True)
+    result = pytaxonkit.lineage(list(set(metadata_df['NCBI_ID'].tolist())))
+    metadata_df = metadata_df.merge(result[['TaxID','Rank','FullLineageTaxIDs','FullLineage','FullLineageRanks']], left_on='NCBI_ID', right_on='TaxID').drop(columns=['NCBI_ID']).reset_index(drop=True)
     metadata_df['FullLineageTaxIDs'] = metadata_df['FullLineageTaxIDs'].str.replace(';','|')
     metadata_df['FullLineage'] = metadata_df['FullLineage'].str.replace(';','|')
     metadata_df['FullLineageRanks'] = metadata_df['FullLineageRanks'].str.replace(';','|')
@@ -83,6 +55,9 @@ if __name__ == "__main__":
     yacht_res_df = pd.read_csv(yacht_res_path, sep=',', header=0)
     ## drop the first column
     yacht_res_df.drop(yacht_res_df.columns[0], axis=1, inplace=True)
+    ## re-determine the in_sample_est based on the given min_coverage
+    yacht_res_df['min_coverage'] = args.min_coverage
+    yacht_res_df['in_sample_est'] = yacht_res_df.apply(lambda row: (row['num_matches'] >= row['acceptance_threshold_wo_coverage'] * row['min_coverage']) & (row['num_matches'] != 0) & (row['acceptance_threshold_wo_coverage'] != 0), axis=1)
     ## select the organisms that YACHT considers to present in the sample
     organism_name_list = yacht_res_df.query('in_sample_est == True')['organism_name'].tolist()
     organism_gtdbid_list = [x.split(' ')[0] for x in organism_name_list]
@@ -92,15 +67,15 @@ if __name__ == "__main__":
         exit(1)
 
     ## Merge the YACHT results with the metadata
-    selected_organism_metadata_df = metadata_df.query("accession in @organism_gtdbid_list").reset_index(drop=True)
+    selected_organism_metadata_df = metadata_df.query("genome_ID in @organism_gtdbid_list").reset_index(drop=True)
 
     ## Summarize the results
     summary_dict = {}
     for row in selected_organism_metadata_df.to_numpy():
         select_index = [index for index, x in enumerate(row[-1].split('|')) if x in allowable_rank]
-        taxid_list = list(np.array(row[3].split('|'))[select_index])
-        lineage_list = list(np.array(row[4].split('|'))[select_index])
-        rank_list = list(np.array(row[5].split('|'))[select_index])
+        taxid_list = list(np.array(row[5].split('|'))[select_index])
+        lineage_list = list(np.array(row[6].split('|'))[select_index])
+        rank_list = list(np.array(row[7].split('|'))[select_index])
         current_lineage = ''
         current_taxid = ''
         for index, (taxid, rank, lineage) in enumerate(zip(taxid_list, rank_list, lineage_list)):

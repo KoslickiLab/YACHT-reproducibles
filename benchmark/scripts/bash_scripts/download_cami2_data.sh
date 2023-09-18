@@ -1,6 +1,5 @@
 #! /bin/bash
 # Download CAMI2 data from https://data.cami-challenge.org/participate
-# Usage: download_cami2_data.sh <benchmark_dir> <cpu_num>
 
 # set up output directory
 if [ $# -eq 0 ]; then
@@ -17,6 +16,7 @@ fi
 
 # download the data seperately for Rhizosphere challenge, Clinical pathogen detection challenge, Challenge Marine Dataset, Strain Madness Dataset
 # Rhizosphere challenge
+echo "Downloading Rhizosphere challenge data"
 if [ ! -d $benchmark_dir/CAMI_data/rhizosphere_data ]; then
     mkdir $benchmark_dir/CAMI_data/rhizosphere_data;
     ## download the simulated data
@@ -56,6 +56,7 @@ fi
 
 
 # Clinical pathogen detection challenge
+echo "Downloading Clinical pathogen detection challenge data"
 if [ ! -d $benchmark_dir/CAMI_data/pathogen_detection_data ]; then
     mkdir $benchmark_dir/CAMI_data/pathogen_detection_data;
     wget -P $benchmark_dir/CAMI_data/pathogen_detection_data https://frl.publisso.de/data/frl:6425521/patmgCAMI2.tar.gz;
@@ -67,6 +68,7 @@ fi
 
 
 # Challenge Marine Dataset
+echo "Downloading Challenge Marine Dataset data"
 if [ ! -d $benchmark_dir/CAMI_data/marine_data ]; then
     mkdir $benchmark_dir/CAMI_data/marine_data
     parallel -j $cpu_num wget -P $benchmark_dir/CAMI_data/marine_data https://frl.publisso.de/data/frl:6425521/marine/short_read/marmgCAMI2_sample_{}_reads.tar.gz ::: {0..9};
@@ -104,6 +106,7 @@ if [ ! -d $benchmark_dir/CAMI_data/marine_data ]; then
 fi
 
 # Strain Madness Dataset
+echo "Downloading Strain Madness Dataset data"
 if [ ! -d $benchmark_dir/CAMI_data/strain_madness_data ]; then
     mkdir $benchmark_dir/CAMI_data/strain_madness_data;
     parallel -j $cpu_num wget -P $benchmark_dir/CAMI_data/strain_madness_data https://frl.publisso.de/data/frl:6425521/strain/short_read/strmgCAMI2_sample_{}_reads.tar.gz ::: {0..99};

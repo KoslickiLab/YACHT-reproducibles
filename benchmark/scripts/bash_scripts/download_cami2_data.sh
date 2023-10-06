@@ -9,7 +9,7 @@ fi
 benchmark_dir=$1
 cpu_num=$2
 
-# create a CAMI_data directory for the output
+# create a CAMI_data directory
 if [ ! -d $benchmark_dir/CAMI_data ]; then
     mkdir $benchmark_dir/CAMI_data
 fi

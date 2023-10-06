@@ -219,9 +219,3 @@ if [ ! -d $real_world_experiment_dir/results/YACHT_results ]; then
     samples=`ls $real_world_experiment_dir/data/sketches | while read i;do filename=$(echo $i | sed 's/.sig.zip//'); echo $filename;done`
     parallel -j $cpu_num python $yacht_repo_loc/run_YACHT.py --keep_raw --json $yacht_repo_loc/pathogen_detection_reference/pathogen_detection_ani_thresh_0.995_config.json --sample_file $real_world_experiment_dir/data/sketches/{}.fastq.gz.sig.zip --significance 0.99 --outdir $real_world_experiment_dir/results/YACHT_results --out_filename {}.xlsx ::: $samples;
 fi
-
-# ## run YACHT on the samples
-# samples1=`ls $real_world_experiment_dir/data/sketches | while read i;do filename=$(echo $i | sed 's/.fastq.gz.sig.zip//'); echo $filename;done`
-# samples2=`ls $real_world_experiment_dir/results/YACHT_results/ | while read i;do filename=$(echo $i | sed 's/.xlsx//'); echo $filename;done`
-# samples=`comm -23 <(echo "$samples1" | tr ' ' '\n' | sort) <(echo "$samples2" | tr ' ' '\n' | sort)`
-# parallel -j $cpu_num python $yacht_repo_loc/run_YACHT.py --keep_raw --json $yacht_repo_loc/pathogen_detection_reference/pathogen_detection_ani_thresh_0.995_config.json --sample_file $real_world_experiment_dir/data/sketches/{}.fastq.gz.sig.zip --significance 0.99 --outdir $real_world_experiment_dir/results/YACHT_results --out_filename {}.xlsx ::: $samples;

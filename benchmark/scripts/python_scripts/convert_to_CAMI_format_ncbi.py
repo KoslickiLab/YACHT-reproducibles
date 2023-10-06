@@ -52,9 +52,7 @@ if __name__ == "__main__":
         exit(1)
     else:
         yacht_res_path = str(yacht_res_path.absolute())
-    yacht_res_df = pd.read_csv(yacht_res_path, sep=',', header=0)
-    ## drop the first column
-    yacht_res_df.drop(yacht_res_df.columns[0], axis=1, inplace=True)
+    yacht_res_df = pd.read_excel(yacht_res_path, sheet_name='raw_result', engine='openpyxl', header=0)
     ## re-determine the in_sample_est based on the given min_coverage
     yacht_res_df['min_coverage'] = args.min_coverage
     yacht_res_df['in_sample_est'] = yacht_res_df.apply(lambda row: (row['num_matches'] >= row['acceptance_threshold_wo_coverage'] * row['min_coverage']) & (row['num_matches'] != 0) & (row['acceptance_threshold_wo_coverage'] != 0), axis=1)

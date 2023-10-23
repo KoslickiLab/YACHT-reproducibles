@@ -3,12 +3,14 @@
 
 # set up output directory
 if [ $# -eq 0 ]; then
-    echo "Usage: run_YACHT_cami2.sh <yacht_repo_loc> <benchmark_dir> <cpu_num>"
+    echo "Usage: run_YACHT_cami2.sh <yacht_reproducibles_dir> <cpu_num>"
     exit 1
 fi
-yacht_repo_loc=$1
-benchmark_dir=$2
-cpu_num=$3
+
+yacht_reproducibles_dir=$1
+yacht_repo_loc=${yacht_reproducibles_dir}/YACHT
+benchmark_dir=${yacht_reproducibles_dir}/benchmark
+cpu_num=$2
 
 ## define a bash function
 function download_microbe_assembly() {
@@ -199,7 +201,7 @@ if [ ! -d $yacht_repo_loc/pathogen_detection_reference ]; then
     less unique_species_taxids.tsv | cut -f 1 | sed '1d' | sort -u >> taxids.tmp
     less taxids.tmp | sort | uniq -u > delete_taxids.txt
     ## manually add some taxids (that are pretty close to target organisms)
-    echo 2878546 >> delete_taxids.txt
+    echo 2878546 2785247 >> delete_taxids.txt
 
     cd $yacht_repo_loc/pathogen_detection_reference;
     if [ ! -d $yacht_repo_loc/pathogen_detection_reference/all_genomes ]; then
@@ -216,6 +218,9 @@ if [ ! -d $yacht_repo_loc/pathogen_detection_reference ]; then
     cd $yacht_repo_loc/pathogen_detection_reference;
     find ./all_genomes -name "*.fna" | awk -F"/" 'BEGIN{print "name,genome_filename,protein_filename"; OFS=","} {name=$3; sub(/\.fna$/, "", name); print name, $0 ","}' > datasets.csv
     sourmash sketch fromfile datasets.csv -p k=31,scaled=100,dna,abund -o customized_pathogen_detection_db_k31_scale100.zip
+
+    ## group the genomes with the same MD5 hash (they are the same genome so we only keep one copy)
+    python $yacht_reproducibles_dir/benchmark/scripts/python_scripts/group_same_genomes.py --sourmash_db customized_pathogen_detection_db_k31_scale100.zip;
 fi
 
 ## Crate the reference dictionary matrixes
@@ -223,7 +228,7 @@ fi
 echo "Creating a reference dictionary matrix for NCBI database"
 cd $yacht_repo_loc/ncbi_reference;
 if [ ! -f $yacht_repo_loc/ncbi_reference/ncbi_ani_thresh_0.995_config.json ]; then
-    python $yacht_repo_loc/make_training_data_from_sketches.py --ref_file $yacht_repo_loc/ncbi_reference/customized_ncbi_db_k31_scale100.zip --ksize 31 --out_prefix 'ncbi_ani_thresh_0.995' --ani_thresh 0.995
+    python $yacht_repo_loc/make_training_data_from_sketches.py --ref_file $yacht_repo_loc/ncbi_reference/customized_ncbi_db_k31_scale100.zip --ksize 31 --num_threads 200 --ani_thresh 0.995 --prefix 'ncbi_ani_thresh_0.995' --outdir ./ &
 fi
 
 
@@ -231,7 +236,7 @@ fi
 echo "Creating a reference dictionary matrix for pathogen detection database"
 cd $yacht_repo_loc/pathogen_detection_reference;
 if [ ! -f $yacht_repo_loc/pathogen_detection_reference/pathogen_detection_ani_thresh_0.995_config.json ]; then
-    python $yacht_repo_loc/make_training_data_from_sketches.py --ref_file $yacht_repo_loc/pathogen_detection_reference/customized_pathogen_detection_db_k31_scale100.zip --ksize 31 --out_prefix 'pathogen_detection_ani_thresh_0.995' --ani_thresh 0.995
+    python $yacht_repo_loc/make_training_data_from_sketches.py --ref_file $yacht_repo_loc/pathogen_detection_reference/customized_pathogen_detection_db_k31_scale100_filtered.zip --ksize 31 --num_threads 200 --ani_thresh 0.995 --prefix 'pathogen_detection_ani_thresh_0.995' --outdir ./
 fi
 
 ## run YACHT on CAMI2 data
@@ -250,30 +255,64 @@ if [ ! -d $benchmark_dir/results/YACHT_results/rhizosphere_data ]; then
     ## create sketches of samples
     if [ ! -d $benchmark_dir/CAMI_data/rhizosphere_data/sketches ]; then
         mkdir $benchmark_dir/CAMI_data/rhizosphere_data/sketches;
-        cd $benchmark_dir/CAMI_data/rhizosphere_data/sketches;
-        parallel -j $cpu_num sourmash sketch dna -f -p k=31,scaled=100,abund -o rhimgCAMI2_sample_{}.sig.zip $benchmark_dir/CAMI_data/rhizosphere_data/rhimgCAMI2_sample_{}.fq.gz ::: {0..20};
     fi
-    ## run YACHT on the samples
-    parallel -j $cpu_num python $yacht_repo_loc/run_YACHT.py --keep_raw --json $yacht_repo_loc/ncbi_reference/ncbi_ani_thresh_0.995_config.json --sample_file $benchmark_dir/CAMI_data/rhizosphere_data/sketches/rhimgCAMI2_sample_{}.sig.zip --significance 0.99 --outdir $benchmark_dir/results/YACHT_results/rhizosphere_data --out_filename rhimgCAMI2_sample_{}.xlsx ::: {0..20};
+    cd $benchmark_dir/CAMI_data/rhizosphere_data/sketches;
+    samples=`ls $benchmark_dir/CAMI_data/rhizosphere_data/*.fq.gz | awk -F"/" '{print $NF}' | sed 's/\.fq\.gz//'`;
+    for sample_name in $samples; do
+        if [ ! -d $benchmark_dir/CAMI_data/rhizosphere_data/sketches/${sample_name} ]; then
+            mkdir $benchmark_dir/CAMI_data/rhizosphere_data/sketches/${sample_name};
+        fi
+    done
+    parallel -j $cpu_num sourmash sketch dna -f -p k=31,scaled=100,abund -o $benchmark_dir/CAMI_data/rhizosphere_data/sketches/{}/{}.sig.zip $benchmark_dir/CAMI_data/rhizosphere_data/{}.fq.gz ::: $samples;
+    # run YACHT on the samples
+    parallel -j $cpu_num python $yacht_repo_loc/run_YACHT.py --keep_raw --json $yacht_repo_loc/ncbi_reference/ncbi_ani_thresh_0.995_config.json --sample_file $benchmark_dir/CAMI_data/rhizosphere_data/sketches/{}/{}.sig.zip --significance 0.99 --num_threads 100 --out $benchmark_dir/results/YACHT_results/rhizosphere_data/{}.xlsx ::: $samples;
     ## convert the YACHT results to CAMI format
-    parallel -j $cpu_num python $benchmark_dir/scripts/python_scripts/convert_to_CAMI_format_ncbi.py --yacht_res $benchmark_dir/results/YACHT_results/rhizosphere_data/rhimgCAMI2_sample_{2}.xlsx --metadata_dir $yacht_repo_loc/ncbi_reference --min_coverage {1} --outfile $benchmark_dir/results/YACHT_results/rhizosphere_data/rhimgCAMI2_sample_{2}_cami_format_coverage{1}.profile ::: 1 0.5 0.1 0.05 0.01 ::: {0..20};
+    parallel -j $cpu_num python $benchmark_dir/scripts/python_scripts/convert_to_CAMI_format_ncbi.py --yacht_res $benchmark_dir/results/YACHT_results/rhizosphere_data/{2}.xlsx --metadata_dir $yacht_repo_loc/ncbi_reference --min_coverage {1} --outfile $benchmark_dir/results/YACHT_results/rhizosphere_data/{2}_cami_format_coverage{1}.profile ::: 1 0.5 0.1 0.05 0.01 ::: $samples;
 fi
+
 
 # run YACHT on Clinical pathogen detection challenge data
 echo "Running YACHT on Clinical pathogen detection challenge data"
 if [ ! -d $benchmark_dir/results/YACHT_results/pathogen_detection_data ]; then
     mkdir $benchmark_dir/results/YACHT_results/pathogen_detection_data;
+    echo "Unzipping the input file..."
+    if [ ! -e "${benchmark_dir}/CAMI_data/pathogen_detection_data/patmg_CAMI2_short_read_R1.fastq" ]; then
+        gunzip -c ${benchmark_dir}/CAMI_data/pathogen_detection_data/patmg_CAMI2_short_read_R1.fastq.gz > ${benchmark_dir}/CAMI_data/pathogen_detection_data/patmg_CAMI2_short_read_R1.fastq
+        metagenome_1=${benchmark_dir}/CAMI_data/pathogen_detection_data/patmg_CAMI2_short_read_R1.fastq
+    else
+        metagenome_1=${benchmark_dir}/CAMI_data/pathogen_detection_data/patmg_CAMI2_short_read_R1.fastq
+    fi
+    if [ ! -e "${benchmark_dir}/CAMI_data/pathogen_detection_data/patmg_CAMI2_short_read_R2.fastq" ]; then
+        gunzip -c ${benchmark_dir}/CAMI_data/pathogen_detection_data/patmg_CAMI2_short_read_R2.fastq.gz > ${benchmark_dir}/CAMI_data/pathogen_detection_data/patmg_CAMI2_short_read_R2.fastq
+        metagenome_2=${benchmark_dir}/CAMI_data/pathogen_detection_data/patmg_CAMI2_short_read_R2.fastq
+    else
+        metagenome_2=${benchmark_dir}/CAMI_data/pathogen_detection_data/patmg_CAMI2_short_read_R2.fastq
+    fi
+    # combine two fastq files into one
+    echo "Combining two fastq files into one..."
+    if [ ! -e "${benchmark_dir}/CAMI_data/pathogen_detection_data/combined.fastq" ]; then
+        cat ${metagenome_1} ${metagenome_2} > ${benchmark_dir}/CAMI_data/pathogen_detection_data/combined.fastq
+        metaphlan_in=${benchmark_dir}/CAMI_data/pathogen_detection_data/combined.fastq
+    else
+        metaphlan_in=${benchmark_dir}/CAMI_data/pathogen_detection_data/combined.fastq
+    fi
     ## create sketches of samples
     if [ ! -d $benchmark_dir/CAMI_data/pathogen_detection_data/sketches ]; then
         mkdir $benchmark_dir/CAMI_data/pathogen_detection_data/sketches;
-        cd $benchmark_dir/CAMI_data/pathogen_detection_data/sketches;
-        sourmash sketch dna -f -p k=31,scaled=100,abund -o patmgCAMI2.sig.zip $benchmark_dir/CAMI_data/pathogen_detection_data/*.fastq.gz;
+
     fi
+    cd $benchmark_dir/CAMI_data/pathogen_detection_data/sketches;
+    sourmash sketch dna -f -p k=31,scaled=100,abund -o patmgCAMI2.sig.zip $metaphlan_in;
     ## run YACHT on the samples
-    python $yacht_repo_loc/run_YACHT.py --keep_raw --json $yacht_repo_loc/pathogen_detection_reference/pathogen_detection_ani_thresh_0.995_config.json --sample_file $benchmark_dir/CAMI_data/pathogen_detection_data/sketches/patmgCAMI2.sig.zip --significance 0.99  --outdir $benchmark_dir/results/YACHT_results/pathogen_detection_data --out_filename patmgCAMI2_0.995.xlsx;
+    python $yacht_repo_loc/run_YACHT.py --keep_raw --json $yacht_repo_loc/pathogen_detection_reference/pathogen_detection_ani_thresh_0.995_config.json --sample_file $benchmark_dir/CAMI_data/pathogen_detection_data/sketches/patmgCAMI2.sig.zip --num_threads 100 --significance 0.99  --out $benchmark_dir/results/YACHT_results/pathogen_detection_data/patmgCAMI2_0.995.xlsx;
     ## convert the YACHT results to CAMI format
     # python $benchmark_dir/scripts/python_scripts/convert_to_CAMI_format.py --yacht_res $benchmark_dir/results/YACHT_results/pathogen_detection_data/patmgCAMI2.csv --metadata_dir $yacht_repo_loc/ncbi_reference --outfile $benchmark_dir/results/YACHT_results/pathogen_detection_data/patmgCAMI2_cami_format.profile;
 fi
+metaphlan_in=${benchmark_dir}/CAMI_data/pathogen_detection_data/combined.fastq
+cd $benchmark_dir/CAMI_data/pathogen_detection_data/sketches;
+sourmash sketch dna -f -p k=31,scaled=100,abund -o patmgCAMI2.sig.zip $metaphlan_in;
+python $yacht_repo_loc/run_YACHT.py --keep_raw --json $yacht_repo_loc/pathogen_detection_reference/pathogen_detection_ani_thresh_0.995_config.json --sample_file $benchmark_dir/CAMI_data/pathogen_detection_data/sketches/patmgCAMI2.sig.zip --num_threads 100 --significance 0.99  --out $benchmark_dir/results/YACHT_results/pathogen_detection_data/patmgCAMI2_0.995.xlsx;
+
 
 # run YACHT on Challenge Marine Dataset
 echo "Running YACHT on Challenge Marine Dataset"
@@ -282,13 +321,19 @@ if [ ! -d $benchmark_dir/results/YACHT_results/marine_data ]; then
     ## create sketches of samples
     if [ ! -d $benchmark_dir/CAMI_data/marine_data/sketches ]; then
         mkdir $benchmark_dir/CAMI_data/marine_data/sketches;
-        cd $benchmark_dir/CAMI_data/marine_data/sketches;
-        parallel -j $cpu_num sourmash sketch dna -f -p k=31,scaled=100,abund -o marmgCAMI2_sample_{}.sig.zip $benchmark_dir/CAMI_data/marine_data/marmgCAMI2_sample_{}.fq.gz ::: {0..9};
     fi
-    ## run YACHT on the samples
-    parallel -j $cpu_num python $yacht_repo_loc/run_YACHT.py --keep_raw --json $yacht_repo_loc/ncbi_reference/ncbi_ani_thresh_0.995_config.json --sample_file $benchmark_dir/CAMI_data/marine_data/sketches/marmgCAMI2_sample_{}.sig.zip --significance 0.99 --outdir $benchmark_dir/results/YACHT_results/marine_data --out_filename marmgCAMI2_sample_{}.xlsx ::: {0..9};
+    cd $benchmark_dir/CAMI_data/marine_data/sketches;
+    samples=`ls $benchmark_dir/CAMI_data/marine_data/*.fq.gz | awk -F"/" '{print $NF}' | sed 's/\.fq\.gz//'`;
+    for sample_name in $samples; do
+        if [ ! -d $benchmark_dir/CAMI_data/marine_data/sketches/${sample_name} ]; then
+            mkdir $benchmark_dir/CAMI_data/marine_data/sketches/${sample_name};
+        fi
+    done
+    parallel -j $cpu_num sourmash sketch dna -f -p k=31,scaled=100,abund -o $benchmark_dir/CAMI_data/rhizosphere_data/{}/{}.sig.zip $benchmark_dir/CAMI_data/marine_data/{}.fq.gz ::: $samples;
+    # run YACHT on the samples
+    parallel -j $cpu_num python $yacht_repo_loc/run_YACHT.py --keep_raw --json $yacht_repo_loc/ncbi_reference/ncbi_ani_thresh_0.995_config.json --sample_file $benchmark_dir/CAMI_data/marine_data/sketches/{}/{}.sig.zip --significance 0.99 --num_threads 100 --out $benchmark_dir/results/YACHT_results/marine_data/{}.xlsx ::: $samples;
     ## convert the YACHT results to CAMI format
-    parallel -j $cpu_num python $benchmark_dir/scripts/python_scripts/convert_to_CAMI_format_ncbi.py --yacht_res $benchmark_dir/results/YACHT_results/marine_data/marmgCAMI2_sample_{2}.xlsx --metadata_dir $yacht_repo_loc/ncbi_reference --min_coverage {1} --outfile $benchmark_dir/results/YACHT_results/marine_data/marmgCAMI2_sample_{2}_cami_format_coverage{1}.profile ::: 1 0.5 0.1 0.05 0.01 ::: {0..9};
+    parallel -j $cpu_num python $benchmark_dir/scripts/python_scripts/convert_to_CAMI_format_ncbi.py --yacht_res $benchmark_dir/results/YACHT_results/marine_data/{2}.xlsx --metadata_dir $yacht_repo_loc/ncbi_reference --min_coverage {1} --outfile $benchmark_dir/results/YACHT_results/marine_data/{2}_cami_format_coverage{1}.profile ::: 1 0.5 0.1 0.05 0.01 ::: $samples;
 fi
 
 # run YACHT on Strain Madness Dataset
@@ -298,11 +343,17 @@ if [ ! -d $benchmark_dir/results/YACHT_results/strain_madness_data ]; then
     ## create sketches of samples
     if [ ! -d $benchmark_dir/CAMI_data/strain_madness_data/sketches ]; then
         mkdir $benchmark_dir/CAMI_data/strain_madness_data/sketches;
-        cd $benchmark_dir/CAMI_data/strain_madness_data/sketches;
-        parallel -j $cpu_num sourmash sketch dna -f -p k=31,scaled=100,abund -o strmgCAMI2_sample_{}.sig.zip $benchmark_dir/CAMI_data/strain_madness_data/strmgCAMI2_sample_{}.fq.gz ::: {0..99};
     fi
-    ## run YACHT on the samples
-    parallel -j $cpu_num python $yacht_repo_loc/run_YACHT.py --keep_raw --json $yacht_repo_loc/ncbi_reference/ncbi_ani_thresh_0.995_config.json --sample_file $benchmark_dir/CAMI_data/strain_madness_data/sketches/strmgCAMI2_sample_{}.sig.zip --significance 0.99 --outdir $benchmark_dir/results/YACHT_results/strain_madness_data --out_filename strmgCAMI2_sample_{}.xlsx ::: {0..99};
+    cd $benchmark_dir/CAMI_data/strain_madness_data/sketches;
+    samples=`ls $benchmark_dir/CAMI_data/strain_madness_data/*.fq.gz | awk -F"/" '{print $NF}' | sed 's/\.fq\.gz//'`;
+    for sample_name in $samples; do
+        if [ ! -d $benchmark_dir/CAMI_data/strain_madness_data/sketches/${sample_name} ]; then
+            mkdir $benchmark_dir/CAMI_data/strain_madness_data/sketches/${sample_name};
+        fi
+    done
+    parallel -j $cpu_num sourmash sketch dna -f -p k=31,scaled=100,abund -o $benchmark_dir/CAMI_data/strain_madness_data/{}/{}.sig.zip $benchmark_dir/CAMI_data/strain_madness_data/{}.fq.gz ::: $samples;
+    # run YACHT on the samples
+    parallel -j $cpu_num python $yacht_repo_loc/run_YACHT.py --keep_raw --json $yacht_repo_loc/ncbi_reference/ncbi_ani_thresh_0.995_config.json --sample_file $benchmark_dir/CAMI_data/strain_madness_data/sketches/{}/{}.sig.zip --significance 0.99 --num_threads 100 --out $benchmark_dir/results/YACHT_results/strain_madness_data/{}.xlsx ::: $samples;
     ## convert the YACHT results to CAMI format
-    parallel -j $cpu_num python $benchmark_dir/scripts/python_scripts/convert_to_CAMI_format_ncbi.py --yacht_res $benchmark_dir/results/YACHT_results/strain_madness_data/strmgCAMI2_sample_{2}.xlsx --metadata_dir $yacht_repo_loc/ncbi_reference --min_coverage {1} --outfile $benchmark_dir/results/YACHT_results/strain_madness_data/strmgCAMI2_sample_{2}_cami_format_coverage{1}.profile ::: 1 0.5 0.1 0.05 0.01 ::: {0..99};
+    parallel -j $cpu_num python $benchmark_dir/scripts/python_scripts/convert_to_CAMI_format_ncbi.py --yacht_res $benchmark_dir/results/YACHT_results/strain_madness_data/{2}.xlsx --metadata_dir $yacht_repo_loc/ncbi_reference --min_coverage {1} --outfile $benchmark_dir/results/YACHT_results/strain_madness_data/{2}_cami_format_coverage{1}.profile ::: 1 0.5 0.1 0.05 0.01 ::: $samples;
 fi

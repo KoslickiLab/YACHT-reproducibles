@@ -112,6 +112,16 @@ function download_virus_assembly() {
 }
 export -f download_virus_assembly
 
+## define a bash function
+function combine_pair_end_fastq() {
+    cd $1/$2;
+    for fastq_file in `ls *.fastq.gz`; do
+        out_filename=$(echo $fastq_file | sed 's/\.gz//')
+        gunzip -c $fastq_file > $out_filename;
+    done
+    cat *.fastq > ${2}_combined.fastq;
+}
+export -f combine_pair_end_fastq
 
 # Build a pathogen database (data collected from BVBRC) used for CAMI2 Challenge
 echo "Building a pathogen database (data collected from BVBRC) used for CAMI2 Challenge"
@@ -170,7 +180,7 @@ if [ ! -d $yacht_repo_loc/pathogen_detection_reference ]; then
     less unique_species_taxids.tsv | cut -f 1 | sed '1d' | sort -u >> taxids.tmp
     less taxids.tmp | sort | uniq -u > delete_taxids.txt
     ## manually add some taxids (that are pretty close to target organisms)
-    echo 2878546 >> delete_taxids.txt
+    echo 2878546 2785247 >> delete_taxids.txt
 
     cd $yacht_repo_loc/pathogen_detection_reference;
     if [ ! -d $yacht_repo_loc/pathogen_detection_reference/all_genomes ]; then
@@ -187,6 +197,9 @@ if [ ! -d $yacht_repo_loc/pathogen_detection_reference ]; then
     cd $yacht_repo_loc/pathogen_detection_reference;
     find ./all_genomes -name "*.fna" | awk -F"/" 'BEGIN{print "name,genome_filename,protein_filename"; OFS=","} {name=$3; sub(/\.fna$/, "", name); print name, $0 ","}' > datasets.csv
     sourmash sketch fromfile datasets.csv -p k=31,scaled=100,dna,abund -o customized_pathogen_detection_db_k31_scale100.zip
+
+    ## group the genomes with the same MD5 hash (they are the same genome so we only keep one copy)
+    python $yacht_reproducibles_dir/benchmark/scripts/python_scripts/group_same_genomes.py --sourmash_db customized_pathogen_detection_db_k31_scale100.zip;
 fi
 
 
@@ -209,19 +222,30 @@ echo "Running YACHT on the real-world data"
 if [ ! -d $real_world_experiment_dir/results/YACHT_results ]; then
     mkdir $real_world_experiment_dir/results/YACHT_results;
     ## create sketches of samples
-    fastq_list=`ls $real_world_experiment_dir/data/fastq`;
     if [ ! -d $real_world_experiment_dir/data/sketches ]; then
         mkdir $real_world_experiment_dir/data/sketches;
-        cd $real_world_experiment_dir/data/sketches;
-        parallel -j $cpu_num sourmash sketch dna -f -p k=31,scaled=100,abund -o {}.sig.zip $real_world_experiment_dir/data/fastq/{}/*.fastq.gz ::: $fastq_list;
     fi
+    samples=`ls $real_world_experiment_dir/data/fastq`;
+    ls $real_world_experiment_dir/data/fastq | parallel -j $cpu_num --link combine_pair_end_fastq $real_world_experiment_dir/data/fastq {};
+    cd $real_world_experiment_dir/data/sketches;
+    for sample_name in $samples; do
+        if [ ! -d $real_world_experiment_dir/data/sketches/${sample_name} ]; then
+            mkdir $real_world_experiment_dir/data/sketches/${sample_name};
+        fi
+    done
+    parallel -j $cpu_num sourmash sketch dna -f -p k=31,scaled=100,abund -o $real_world_experiment_dir/data/sketches/{}/{}.sig.zip $real_world_experiment_dir/data/fastq/{}/{}_combined.fastq ::: $samples;
     ## run YACHT on the samples
-    samples=`ls $real_world_experiment_dir/data/sketches | while read i;do filename=$(echo $i | sed 's/.sig.zip//'); echo $filename;done`
-    parallel -j $cpu_num python $yacht_repo_loc/run_YACHT.py --keep_raw --json $yacht_repo_loc/pathogen_detection_reference/pathogen_detection_ani_thresh_0.995_config.json --sample_file $real_world_experiment_dir/data/sketches/{}.fastq.gz.sig.zip --significance 0.99 --outdir $real_world_experiment_dir/results/YACHT_results --out_filename {}.xlsx ::: $samples;
+    parallel -j $cpu_num python $yacht_repo_loc/run_YACHT.py --keep_raw --json $yacht_repo_loc/pathogen_detection_reference/pathogen_detection_ani_thresh_0.995_config.json --sample_file $real_world_experiment_dir/data/sketches/{}/{}.sig.zip --significance 0.99 --num_threads 100 --out $real_world_experiment_dir/results/YACHT_results/{}.xlsx ::: $samples;
 fi
 
-# ## run YACHT on the samples
-# samples1=`ls $real_world_experiment_dir/data/sketches | while read i;do filename=$(echo $i | sed 's/.fastq.gz.sig.zip//'); echo $filename;done`
-# samples2=`ls $real_world_experiment_dir/results/YACHT_results/ | while read i;do filename=$(echo $i | sed 's/.xlsx//'); echo $filename;done`
-# samples=`comm -23 <(echo "$samples1" | tr ' ' '\n' | sort) <(echo "$samples2" | tr ' ' '\n' | sort)`
-# parallel -j $cpu_num python $yacht_repo_loc/run_YACHT.py --keep_raw --json $yacht_repo_loc/pathogen_detection_reference/pathogen_detection_ani_thresh_0.995_config.json --sample_file $real_world_experiment_dir/data/sketches/{}.fastq.gz.sig.zip --significance 0.99 --outdir $real_world_experiment_dir/results/YACHT_results --out_filename {}.xlsx ::: $samples;
+cd $real_world_experiment_dir/data/sketches;
+samples=`ls $real_world_experiment_dir/data/fastq`;
+for sample_name in $samples; do
+    if [ ! -d $real_world_experiment_dir/data/sketches/${sample_name} ]; then
+        mkdir $real_world_experiment_dir/data/sketches/${sample_name};
+    fi
+done
+# parallel -j $cpu_num sourmash sketch dna -f -p k=31,scaled=100,abund -o $real_world_experiment_dir/data/sketches/{}/{}.sig.zip $real_world_experiment_dir/data/fastq/{}/{}_combined.fastq ::: $samples;
+parallel -j $cpu_num python $yacht_repo_loc/run_YACHT.py --keep_raw --json $yacht_repo_loc/pathogen_detection_reference/pathogen_detection_ani_thresh_0.995_config.json --sample_file $real_world_experiment_dir/data/sketches/{}/{}.sig.zip --significance 0.99 --num_threads 100 --out $real_world_experiment_dir/results/YACHT_results/{}.xlsx ::: $samples;
+
+

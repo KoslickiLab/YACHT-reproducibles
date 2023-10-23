@@ -3,12 +3,13 @@
 
 # set up output directory
 if [ $# -eq 0 ]; then
-    echo "Usage: run_OPAL_cami2.sh <opal_repo_loc> <benchmark_dir> <cpu_num>"
+    echo "Usage: run_OPAL_cami2.sh <yacht_reproducibles_dir> <cpu_num>"
     exit 1
 fi
-opal_repo_loc=$1
-benchmark_dir=$2
-cpu_num=$3
+yacht_reproducibles_dir=$1
+opal_repo_loc=${yacht_reproducibles_dir}/OPAL
+benchmark_dir=${yacht_reproducibles_dir}/benchmark
+cpu_num=$2
 
 ## go to the benchmark directory
 cd $benchmark_dir

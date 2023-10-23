@@ -3,10 +3,11 @@
 
 # set up output directory
 if [ $# -eq 0 ]; then
-    echo "Usage: download_cami2_data.sh <benchmark_dir> <cpu_num>"
+    echo "Usage: download_cami2_data.sh <yacht_reproducibles_dir> <cpu_num>"
     exit 1
 fi
-benchmark_dir=$1
+yacht_reproducibles_dir=$1
+benchmark_dir=${yacht_reproducibles_dir}/benchmark
 cpu_num=$2
 
 # create a CAMI_data directory

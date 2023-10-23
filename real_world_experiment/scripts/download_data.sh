@@ -38,4 +38,7 @@ if [ ! -d $data_dir/fastq ]; then
     awk -F'\t' '$2=="Q" {print $1}' phaseIII_sample_list.tsv | awk -F'\t' 'NR==FNR {samples[$1]=1; next} {for (sample in samples) if ($7 ~ sample) print $8}' - filereport_read_run_PRJEB14847.tsv | parallel -j $cpu_num --link download_fastq $(pwd) {};
 fi
 
-
+# delete ERR1971006 folder because its _2.fastq file is not complete
+if [ -d $data_dir/fastq/ERR1971006 ]; then
+    rm -r $data_dir/fastq/ERR1971006;
+fi

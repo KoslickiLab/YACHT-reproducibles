@@ -1,18 +1,24 @@
 # YACHT (Benchmarking and Proof-of-Concept Experiments)
 
-**_PLEASE NOTE: this repo is created for the proof-of-concept and benchmarking experiments of YACHT. For updates on the production-level code, please follow [this repo](https://github.com/KoslickiLab/YACHT/)_**
+**_PLEASE NOTE: this repo is created for the benchmarking experiments and the proof-of-concept of YACHT. For updates on the production-level code, please follow [this repo](https://github.com/KoslickiLab/YACHT/)_**
 
 ## Installation
 Please install the necessary packages via [Conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) following the commands below:
 
 ```bash
 # Clone the repo
-git clone https://github.com/KoslickiLab/YACHT.git
+git clone https://github.com/KoslickiLab/YACHT-reproducibles.git
 cd YACHT
 
-# Create a conda environment for YACHT
-conda env create -f env/yacht_env.yaml
-conda activate yacht
+# Set up an environment
+bash setup.sh
+
+# Activiate environment
+conda activate yacht_env
+
+# Download pyo3_branchwater repo and install it
+git clone https://github.com/sourmash-bio/pyo3_branchwater.git
+pip install -e ./pyo3_branchwater/.
 ```
 
 ## Benchmarking Experiments
@@ -29,13 +35,13 @@ git clone https://github.com/KoslickiLab/YACHT.git
 2. Download CAMI2 datasets 
 ```bash
 # download_cami2_data.sh <benchmark_dir> <cpu_num>
-bash ./benchmark/scripts/bash_scripts/download_cami2_data.sh <path_to_YACHT-reproducibles>/benchmark 50
+bash ./benchmark/scripts/bash_scripts/download_cami2_data.sh <path_to_YACHT-reproducibles> 50
 ```
 
 3. Run YACHT on the CAMI datasets
 ```bash
 # run_YACHT.sh <yacht_repo_loc> <benchmark_dir> <cpu_num>
-bash ./benchmark/scripts/bash_scripts/run_YACHT.sh <path_to_YACHT-reproducibles>/YACHT <path_to_YACHT-reproducibles>/benchmark 20
+bash ./benchmark/scripts/bash_scripts/run_YACHT_cami2.sh <path_to_YACHT-reproducibles> <path_to_YACHT-reproducibles>/benchmark 20
 ```
 
 4. Run OPAL on the YACHT results
@@ -43,7 +49,7 @@ bash ./benchmark/scripts/bash_scripts/run_YACHT.sh <path_to_YACHT-reproducibles>
 # git clone OPAL 
 git clone https://github.com/CAMI-challenge/OPAL
 # run_OPAL.sh <opal_repo_loc> <benchmark_dir> <cpu_num>
-bash ./benchmark/scripts/bash_scripts/run_OPAL.sh <path_to_YACHT-reproducibles>/OPAL <path_to_YACHT-reproducibles>/benchmark 20
+bash ./benchmark/scripts/bash_scripts/run_OPAL_cami2.sh <path_to_YACHT-reproducibles> 20
 ```
 
 ## Proof-of-Concept Experiments

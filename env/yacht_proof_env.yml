@@ -1,0 +1,33 @@
+name: yacht_proof_env
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python>3.6
+  - sourmash>=4.8.3,<5
+  - parallel
+  - rust
+  - scipy
+  - numpy
+  - pandas
+  - scikit-learn
+  - pytest
+  - loguru
+  - maturin>=1,<2
+  - tqdm
+  - biom-format
+  - pytaxonkit
+  - taxonkit
+  - cvxpy
+  - jq
+  - ncbi-datasets-cli
+  - ncbi-genome-download
+  - metaphlan
+  - sra-tools
+  - cvxpy
+  - java-jdk>=8u362
+  - pip:
+    - cami-opal
+    - openpyxl
+    - git+https://github.com/sourmash-bio/pyo3_branchwater@v0.8.1

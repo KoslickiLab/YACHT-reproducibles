@@ -106,7 +106,7 @@ do
 
     # find the location of the real GTDB genomes
     #cut -d',' -f3 sigs_md5_to_accession_mut_${mut}.txt | tail -n +2 | xargs -P 10 -I{} grep -m1 {} /data/shared_data/GTDB/gtdb_genomes_reps_r207/file_list.txt > sigs_gtdb_file_locations_mut_${mut}.txt
-    cut -d',' -f3 sigs_md5_to_accession_mut_${mut}.txt | tail -n +2 | parallel -j 10 --keep-order grep -m1 {} /data/shared_data/GTDB/gtdb_genomes_reps_r207/file_list.txt > sigs_gtdb_file_locations_mut_${mut}.txt
+    cut -d',' -f3 sigs_md5_to_accession_mut_${mut}.txt | tail -n +2 | parallel -j 10 --keep-order grep -m1 {} $(pwd)/file_list.txt > sigs_gtdb_file_locations_mut_${mut}.txt
 
     # add these to the accession list
     paste -d',' <(cat sigs_md5_to_accession_mut_${mut}.txt) <(sed '1s/^/gtdb_file_location\n/' sigs_gtdb_file_locations_mut_${mut}.txt) > sigs_md5_to_accession_to_gtdb_location_mut_${mut}.txt
@@ -140,7 +140,7 @@ do
                 #../../../KEGG_sketching_annotation/utils/bbmap/./randomreads.sh ref=${fileLoc} overwrite=t out=sigs_cov_${cov}/reads/${md5short}.fna coverage=0${cov}
                 tempDir=$(mktemp -d)
                 #echo "cd $tempDir; /data/dmk333/Repositories/KEGG_sketching_annotation/utils/bbmap/./randomreads.sh  ref=${fileLoc} overwrite=t out=/data/dmk333/Repositories/Estimating_Unknowns/experiments/mut_thresh_spike_and_cov_redo/sigs_cov_${cov}/reads/${md5short}.fna coverage=0${cov}"
-        	echo "cd $tempDir; bash ${randomReadsLoc}  ref=${fileLoc} overwrite=t out=/data/dmk333/Repositories/Estimating_Unknowns/experiments/mut_thresh_spike_and_cov_redo/sigs_cov_${cov}/reads/${md5short}.fna coverage=0${cov}"
+        	echo "cd $tempDir; bash ${randomReadsLoc}  ref=${fileLoc} overwrite=t out=$(pwd)/sigs_cov_${cov}/reads/${md5short}.fna coverage=0${cov}"
 	done | parallel -j 200
 done
 

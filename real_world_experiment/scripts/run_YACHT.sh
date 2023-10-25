@@ -237,15 +237,3 @@ if [ ! -d $real_world_experiment_dir/results/YACHT_results ]; then
     ## run YACHT on the samples
     parallel -j $cpu_num python $yacht_repo_loc/run_YACHT.py --keep_raw --json $yacht_repo_loc/pathogen_detection_reference/pathogen_detection_ani_thresh_0.995_config.json --sample_file $real_world_experiment_dir/data/sketches/{}/{}.sig.zip --significance 0.99 --num_threads 100 --out $real_world_experiment_dir/results/YACHT_results/{}.xlsx ::: $samples;
 fi
-
-cd $real_world_experiment_dir/data/sketches;
-samples=`ls $real_world_experiment_dir/data/fastq`;
-for sample_name in $samples; do
-    if [ ! -d $real_world_experiment_dir/data/sketches/${sample_name} ]; then
-        mkdir $real_world_experiment_dir/data/sketches/${sample_name};
-    fi
-done
-# parallel -j $cpu_num sourmash sketch dna -f -p k=31,scaled=100,abund -o $real_world_experiment_dir/data/sketches/{}/{}.sig.zip $real_world_experiment_dir/data/fastq/{}/{}_combined.fastq ::: $samples;
-parallel -j $cpu_num python $yacht_repo_loc/run_YACHT.py --keep_raw --json $yacht_repo_loc/pathogen_detection_reference/pathogen_detection_ani_thresh_0.995_config.json --sample_file $real_world_experiment_dir/data/sketches/{}/{}.sig.zip --significance 0.99 --num_threads 100 --out $real_world_experiment_dir/results/YACHT_results/{}.xlsx ::: $samples;
-
-

@@ -37,7 +37,7 @@ bash ./benchmark/scripts/bash_scripts/download_cami2_data.sh <path_to_YACHT-repr
 3. Run YACHT on the CAMI datasets
 ```bash
 # run_YACHT.sh <yacht_repo_loc> <benchmark_dir> <cpu_num>
-bash ./benchmark/scripts/bash_scripts/run_YACHT_cami2.sh <path_to_YACHT-reproducibles> <path_to_YACHT-reproducibles>/benchmark 20
+bash ./benchmark/scripts/bash_scripts/run_YACHT_cami2.sh <path_to_YACHT-reproducibles> 20
 ```
 
 4. Run OPAL on the YACHT results

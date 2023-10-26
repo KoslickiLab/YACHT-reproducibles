@@ -10,15 +10,11 @@ Please install the necessary packages via [Conda](https://conda.io/projects/cond
 git clone https://github.com/KoslickiLab/YACHT-reproducibles.git
 cd YACHT
 
-# Set up an environment
-bash setup.sh
+# Install Conda environment
+conda env create -f env/yacht_proof_env.yml
 
 # Activiate environment
-conda activate yacht_env
-
-# Download pyo3_branchwater repo and install it
-git clone https://github.com/sourmash-bio/pyo3_branchwater.git
-pip install -e ./pyo3_branchwater/.
+conda activate yacht_proof_env
 ```
 
 ## Benchmarking Experiments

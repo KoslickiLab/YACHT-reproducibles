@@ -1,4 +1,4 @@
-# YACHT (Benchmarking and Proof-of-Concept Experiments)
+# YACHT (Code for Reproducibility of Experiments)
 
 **_PLEASE NOTE: this repo is created for the benchmarking experiments and the proof-of-concept of YACHT. For updates on the production-level code, please follow [this repo](https://github.com/KoslickiLab/YACHT/)_**
 
